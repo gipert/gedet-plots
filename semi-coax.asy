@@ -23,8 +23,7 @@
 from "gedet-plots.asy" access *;
 from "detector_db.asy" access *;
 
-// settings.outformat = "pdf";
-
+// settings.outformat = "png";
 settings.prc = false;
 // settings.render = 0;
 
@@ -43,4 +42,4 @@ void showaxes(picture pic=currentpicture, triple pos=O) {
 // currentprojection=orthographic((1,1,1));
 // showaxes();
 
-gedetplot(ANG5.getprofile(), angle1=0, angle2=220);
+gedetdraw(ANG5.getprofile(), angle1=0, angle2=220);
