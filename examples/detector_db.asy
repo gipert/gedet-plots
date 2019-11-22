@@ -20,7 +20,7 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 // IN THE SOFTWARE.
 
-from "gedet-plots.asy" access *;
+from "../gedetplots" access BEGe, SemiCoax, InvCoax;
 
 BEGe GD79B = BEGe(height=29.04, radius=38.42, groove_depth=2, groove_inner_r=7.5, groove_outer_r=10.5);
 BEGe GD35C = BEGe(height=26.40, radius=37.40, groove_depth=2, groove_inner_r=7.5, groove_outer_r=10.5);
@@ -70,3 +70,5 @@ SemiCoax RG1 = SemiCoax(height=84, radius=38.25, groove_depth=2, groove_inner_r=
 SemiCoax GTF112 = SemiCoax(height=75,  radius=43.5, groove_depth=2, groove_inner_r=15, groove_outer_r=20, borehole_depth=43.0, borehole_radius=5.75);
 SemiCoax GTF32  = SemiCoax(height=71,  radius=44.5, groove_depth=2, groove_inner_r=15, groove_outer_r=20, borehole_depth=41.5, borehole_radius=6.00);
 SemiCoax GTF45  = SemiCoax(height=100, radius=42.5, groove_depth=2, groove_inner_r=17, groove_outer_r=20, borehole_depth=63.0, borehole_radius=5.75);
+
+InvCoax IC48A = InvCoax(height=80.4, radius=37.3, groove_depth=2, groove_inner_r=10, groove_outer_r=13, borehole_depth=47.4, borehole_radius=5.25);
