@@ -20,12 +20,12 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 // IN THE SOFTWARE.
 
+//settings.outformat = "png";
+//settings.prc = false;
+//settings.render = -1;
+
 import three;
 from detector_db access *;
-
-// settings.outformat = "png";
-settings.prc = false;
-// settings.render = 0;
 
 ANG5.draw(angle1=0, angle2=220, pos=80Z);
 GD02D.draw(angle1=0, angle2=220, pos=O);

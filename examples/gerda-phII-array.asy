@@ -20,11 +20,11 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 // IN THE SOFTWARE.
 
-from detector_db access *;
-
-settings.prc = false;
+// settings.prc = false;
 // settings.outformat = "pdf";
 // settings.render = 0;
+
+from detector_db access *;
 
 // string 1
 GD91C.draw(pos=(110,0,-309.61));
