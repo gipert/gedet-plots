@@ -20,21 +20,17 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 // IN THE SOFTWARE.
 
-// settings.prc = false;
-// settings.outformat = "pdf";
-// settings.render = 0;
-
 from detector_db access *;
 
 // string 1
-GD91C.draw(pos=(110,0,-309.61));
-GD02D.draw(pos=(110,0,-275.75));
-GD89B.draw(pos=(110,0,-210.57));
-GD61A.draw(pos=(110,0,-152.72));
-GD00B.draw(pos=(110,0,-96.27));
-GD02B.draw(pos=(110,0,-38.17));
-GD35B.draw(pos=(110,0,17.05));
 GD91A.draw(pos=(110,0,75.09));
+GD35B.draw(pos=(110,0,17.05));
+GD02B.draw(pos=(110,0,-38.17));
+GD00B.draw(pos=(110,0,-96.27));
+GD61A.draw(pos=(110,0,-152.72));
+GD89B.draw(pos=(110,0,-210.57));
+GD02D.draw(pos=(110,0,-275.75), flip=true);
+GD91C.draw(pos=(110,0,-309.61));
 
 // string 2
 ANG5.draw(pos=(55.00,95.26,29.00));
@@ -42,17 +38,17 @@ RG1 .draw(pos=(55.00,95.26,-103.00));
 ANG3.draw(pos=(55.00,95.26,-240.00));
 
 // string 3
-GD02A.draw(pos=(-55.00,95.26,67.44));
+GD02A.draw(pos=(-55.00,95.26,67.44), flip=true);
 GD32B.draw(pos=(-55.00,95.26,32.58));
 GD32A.draw(pos=(-55.00,95.26,-34.40));
 GD32C.draw(pos=(-55.00,95.26,-68.42));
 GD89C.draw(pos=(-55.00,95.26,-126.13));
 GD61C.draw(pos=(-55.00,95.26,-178.78));
-GD76B.draw(pos=(-55.00,95.26,-241.72));
+GD76B.draw(pos=(-55.00,95.26,-241.72), flip=true);
 GD00C.draw(pos=(-55.00,95.26,-276.68));
 
 // string 4
-GD35C.draw(pos=(-110.00,0.00,67.84));
+GD35C.draw(pos=(-110.00,0.00,67.84), flip=true);
 GD76C.draw(pos=(-110.00,0.00,33.09));
 GD89D.draw(pos=(-110.00,0.00,-25.55));
 GD79C.draw(pos=(-110.00,0.00,-133.89));
@@ -66,7 +62,7 @@ ANG4.draw(pos=(-55.00,-95.26,-236.50));
 ANG2.draw(pos=(-55.00,-95.26,30.00));
 
 // string 6
-GD00A.draw(pos=(55.00,-95.26,67.30));
+GD00A.draw(pos=(55.00,-95.26,67.30), flip=true);
 GD02C.draw(pos=(55.00,-95.26,32.80));
 GD79B.draw(pos=(55.00,-95.26,-22.48));
 GD91D.draw(pos=(55.00,-95.26,-74.56));

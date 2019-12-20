@@ -43,7 +43,7 @@ material oxidelayer = material(
     opacity(0.5)
 );
 
-real eps_edge_rounding = 0.3;
+real eps_edge_rounding = 0.5;
 
 struct gedet_profile {
     path all;
@@ -59,27 +59,30 @@ struct gedet_profile {
 struct gedet {
     gedet_profile profile;
 
+    real height;
+    real radius;
     real passlayer_thickness = 0.1;
 
-    void draw(picture pic=currentpicture, triple pos=O, real angle1=0, real angle2=360) {
+    void draw(picture pic=currentpicture, triple pos=O, bool flip=false, real angle1=0, real angle2=360) {
         // sanity checks
-        if (angle1 >= angle2 || angle2-angle1 > 360) abort("gedetdraw(): invalid input");
+        if (angle1 >= angle2 || angle2-angle1 > 360) abort("gedet.draw(): invalid input");
 
         path3 profile3 = path3(this.profile.all, plane=YZplane);
-        draw(shift(pos) * surface(profile3 -- cycle, c=O, axis=Z, angle1=angle1, angle2=angle2), surfacepen=germanium);
+        real[][] trans = shift(pos) * rotate(flip ? 180 : 0, X);
+        draw(trans * surface(profile3 -- cycle, c=O, axis=Z, angle1=angle1, angle2=angle2), surfacepen=germanium);
 
         if (this.profile.passlayer != nullpath) {
             path3 passlayer3 = path3(this.profile.passlayer, plane=YZplane);
-            draw(shift(pos) * surface(passlayer3, c=O, axis=Z, angle1=angle1, angle2=angle2), surfacepen=oxidelayer);
+            draw(trans * surface(passlayer3, c=O, axis=Z, angle1=angle1, angle2=angle2), surfacepen=oxidelayer);
             if (angle2-angle1 != 360) {
-                draw(shift(pos) * rotate(angle1, Z) * surface(passlayer3 -- cycle), surfacepen=oxidelayer);
-                draw(shift(pos) * rotate(angle2, Z) * surface(passlayer3 -- cycle), surfacepen=oxidelayer);
+                draw(trans * rotate(angle1, Z) * surface(passlayer3 -- cycle), surfacepen=oxidelayer);
+                draw(trans * rotate(angle2, Z) * surface(passlayer3 -- cycle), surfacepen=oxidelayer);
             }
         }
         // draw faces in cut view
         if (angle2-angle1 != 360) {
-            draw(shift(pos) * rotate(angle1, Z) * surface(profile3 -- cycle), surfacepen=germanium);
-            draw(shift(pos) * rotate(angle2, Z) * surface(profile3 -- cycle), surfacepen=germanium);
+            draw(trans * rotate(angle1, Z) * surface(profile3 -- cycle), surfacepen=germanium);
+            draw(trans * rotate(angle2, Z) * surface(profile3 -- cycle), surfacepen=germanium);
         }
     }
 }
@@ -92,8 +95,6 @@ struct BEGe {
     gedet base;
     unravel base;
 
-    real height;
-    real radius;
     real groove_depth;
     real groove_inner_r;
     real groove_outer_r;
@@ -104,7 +105,7 @@ struct BEGe {
     void operator init(real keyword height, real keyword radius, real keyword groove_depth,
                        real keyword groove_inner_r, real keyword groove_outer_r,
                        real keyword cone_radius=0, real keyword cone_height=0,
-                       bool keyword cone_on_top=true) {
+                       bool keyword cone_on_top=true, bool keyword is_passivated=false) {
         this.height = height;
         this.radius = radius;
         this.groove_depth = groove_depth;
@@ -113,6 +114,7 @@ struct BEGe {
         this.cone_radius = cone_radius;
         this.cone_height = cone_height;
         this.cone_on_top = cone_on_top;
+        if (!is_passivated) this.passlayer_thickness = 0;
 
         // apply some edge rounding, to make it look more realistic
         real eps = eps_edge_rounding;
@@ -150,18 +152,20 @@ struct BEGe {
         this.profile.all = shift(0,-this.height/2) * p;
 
         // passivation layer
-        this.profile.passlayer = (this.groove_inner_r-eps,0){right} .. {up}(this.groove_inner_r,eps)
-            -- (this.groove_inner_r,this.groove_depth-eps){up} .. {right}(this.groove_inner_r+eps,this.groove_depth)
-            -- (this.groove_outer_r-eps,this.groove_depth){right} .. {down}(this.groove_outer_r,this.groove_depth-eps)
-            -- (this.groove_outer_r,eps){down} .. {right}(this.groove_outer_r+eps,0); // and back...
-        real delta = this.passlayer_thickness;
-        this.profile.passlayer = this.profile.passlayer{left} .. {up}(this.groove_outer_r-delta,eps)
-            -- (this.groove_outer_r-delta,this.groove_depth-eps){up} .. {left}(this.groove_outer_r-eps,this.groove_depth-delta)
-            -- (this.groove_inner_r+eps,this.groove_depth-delta){left} .. {down}(this.groove_inner_r+delta,this.groove_depth-eps)
-            -- (this.groove_inner_r+delta,eps){down} .. {left}(this.groove_inner_r-eps,0);
+        if (this.passlayer_thickness > 0) {
+            this.profile.passlayer = (this.groove_inner_r-eps,0){right} .. {up}(this.groove_inner_r,eps)
+                -- (this.groove_inner_r,this.groove_depth-eps){up} .. {right}(this.groove_inner_r+eps,this.groove_depth)
+                -- (this.groove_outer_r-eps,this.groove_depth){right} .. {down}(this.groove_outer_r,this.groove_depth-eps)
+                -- (this.groove_outer_r,eps){down} .. {right}(this.groove_outer_r+eps,0); // and back...
+            real delta = this.passlayer_thickness;
+            this.profile.passlayer = this.profile.passlayer{left} .. {up}(this.groove_outer_r-delta,eps)
+                -- (this.groove_outer_r-delta,this.groove_depth-eps){up} .. {left}(this.groove_outer_r-eps,this.groove_depth-delta)
+                -- (this.groove_inner_r+eps,this.groove_depth-delta){left} .. {down}(this.groove_inner_r+delta,this.groove_depth-eps)
+                -- (this.groove_inner_r+delta,eps){down} .. {left}(this.groove_inner_r-eps,0);
 
-        // center profile (detector) in origin
-        this.profile.passlayer = shift(0,-this.height/2) * this.profile.passlayer;
+            // center profile (passivation layer) in origin
+            this.profile.passlayer = shift(0,-this.height/2) * this.profile.passlayer;
+        }
     }
 }
 
@@ -170,7 +174,7 @@ struct BEGe {
  */
 
 struct SemiCoax {
-    BEGe bege;
+    BEGe bege; // use BEGe as base class
     unravel bege;
 
     real borehole_depth;
@@ -180,10 +184,11 @@ struct SemiCoax {
                        real keyword groove_inner_r, real keyword groove_outer_r,
                        real keyword borehole_radius, real keyword borehole_depth,
                        real keyword cone_radius=0, real keyword cone_height=0,
-                       bool keyword cone_on_top=true) {
+                       bool keyword cone_on_top=true, bool keyword is_passivated=false) {
         bege.operator init(height=height, radius=radius, groove_depth=groove_depth,
                            groove_inner_r=groove_inner_r, groove_outer_r=groove_outer_r,
-                           cone_radius=cone_radius, cone_height=cone_height, cone_on_top=cone_on_top);
+                           cone_radius=cone_radius, cone_height=cone_height, cone_on_top=cone_on_top,
+                           is_passivated=is_passivated);
         this.borehole_radius = borehole_radius;
         this.borehole_depth = borehole_depth;
 
@@ -232,7 +237,7 @@ struct SemiCoax {
  */
 
 struct InvCoax {
-    BEGe bege;
+    BEGe bege; // use BEGe as base class
     unravel bege;
 
     real borehole_depth;
@@ -242,10 +247,11 @@ struct InvCoax {
                        real keyword groove_inner_r, real keyword groove_outer_r,
                        real keyword borehole_radius, real keyword borehole_depth,
                        real keyword cone_radius=0, real keyword cone_height=0,
-                       bool keyword cone_on_top=true) {
+                       bool keyword cone_on_top=true, bool keyword is_passivated=false) {
         bege.operator init(height=height, radius=radius, groove_depth=groove_depth,
                            groove_inner_r=groove_inner_r, groove_outer_r=groove_outer_r,
-                           cone_radius=cone_radius, cone_height=cone_height, cone_on_top=cone_on_top);
+                           cone_radius=cone_radius, cone_height=cone_height, cone_on_top=cone_on_top,
+                           is_passivated=is_passivated);
         this.borehole_radius = borehole_radius;
         this.borehole_depth = borehole_depth;
 
