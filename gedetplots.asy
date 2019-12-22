@@ -37,9 +37,19 @@ material germanium = material(
     emissivepen=black
 );
 
-material oxidelayer = material(
+material ge_pplus = material(
+    diffusepen=RGB(238,119,51),
+    emissivepen=black
+);
+
+material ge_nplus = material(
+    diffusepen=RGB(0,153,136),
+    emissivepen=black
+);
+
+material ge_oxide = material(
     diffusepen=gray(0.8),
-    emissivepen=RGB(38,64,115),
+    emissivepen=RGB(0,119,187),
     opacity(0.5)
 );
 
@@ -49,6 +59,7 @@ struct gedet_profile {
     path all;
     path pplus;
     path nplus;
+    path groove;
     path passlayer;
 }
 
@@ -59,11 +70,17 @@ struct gedet_profile {
 struct gedet {
     gedet_profile profile;
 
+    string name;
     real height;
     real radius;
     real passlayer_thickness = 0.1;
 
-    void draw(picture pic=currentpicture, triple pos=O, bool flip=false, real angle1=0, real angle2=360) {
+    /*
+     * Draw full 3D detector
+     */
+    void draw(picture pic=currentpicture, triple pos=O,
+              bool flip=false, real angle1=0, real angle2=360) {
+
         // sanity checks
         if (angle1 >= angle2 || angle2-angle1 > 360) abort("gedet.draw(): invalid input");
 
@@ -73,10 +90,10 @@ struct gedet {
 
         if (this.profile.passlayer != nullpath) {
             path3 passlayer3 = path3(this.profile.passlayer, plane=YZplane);
-            draw(trans * surface(passlayer3, c=O, axis=Z, angle1=angle1, angle2=angle2), surfacepen=oxidelayer);
+            draw(trans * surface(passlayer3, c=O, axis=Z, angle1=angle1, angle2=angle2), surfacepen=ge_oxide);
             if (angle2-angle1 != 360) {
-                draw(trans * rotate(angle1, Z) * surface(passlayer3 -- cycle), surfacepen=oxidelayer);
-                draw(trans * rotate(angle2, Z) * surface(passlayer3 -- cycle), surfacepen=oxidelayer);
+                draw(trans * rotate(angle1, Z) * surface(passlayer3 -- cycle), surfacepen=ge_oxide);
+                draw(trans * rotate(angle2, Z) * surface(passlayer3 -- cycle), surfacepen=ge_oxide);
             }
         }
         // draw faces in cut view
@@ -84,6 +101,37 @@ struct gedet {
             draw(trans * rotate(angle1, Z) * surface(profile3 -- cycle), surfacepen=germanium);
             draw(trans * rotate(angle2, Z) * surface(profile3 -- cycle), surfacepen=germanium);
         }
+    }
+
+    /*
+     * Draw just 2D profile
+     */
+    // pure virtual function to be overloaded later
+    void draw_name(picture pic=currentpicture, pair pos=(0,0));
+    // actual routine
+    void draw(picture pic=currentpicture, pair pos=(0,0),
+              bool flip=false, bool name=true) {
+
+        transform trans = shift(pos) * rotate(flip ? 180 : 0);
+
+        // draw groove
+        draw(trans * reflect((0,0), (0,1)) * this.profile.groove, linewidth(2)+germanium.p[0]);
+        draw(trans * this.profile.groove,                         linewidth(2)+germanium.p[0]);
+
+        // draw passivation layer
+        // draw(trans * reflect((0,0), (0,1)) * this.profile.passlayer, linewidth(2)+ge_oxide.p[1]);
+        // draw(trans * this.profile.passlayer,                         linewidth(2)+ge_oxide.p[1]);
+
+        // draw pplus
+        draw(trans * reflect((0,0), (0,1)) * this.profile.pplus, linewidth(2)+ge_pplus.p[0]);
+        draw(trans * this.profile.pplus,                         linewidth(2)+ge_pplus.p[0]);
+
+        // draw nplus
+        draw(trans * reflect((0,0), (0,1)) * this.profile.nplus, linewidth(2)+ge_nplus.p[0]);
+        draw(trans * this.profile.nplus,                         linewidth(2)+ge_nplus.p[0]);
+
+        // add detector name
+        this.draw_name(pos);
     }
 }
 
@@ -102,10 +150,12 @@ struct BEGe {
     real cone_height;
     bool cone_on_top;
 
-    void operator init(real keyword height, real keyword radius, real keyword groove_depth,
+    void operator init(string name="",
+                       real keyword height, real keyword radius, real keyword groove_depth,
                        real keyword groove_inner_r, real keyword groove_outer_r,
                        real keyword cone_radius=0, real keyword cone_height=0,
                        bool keyword cone_on_top=true, bool keyword is_passivated=false) {
+        this.name = name;
         this.height = height;
         this.radius = radius;
         this.groove_depth = groove_depth;
@@ -119,54 +169,81 @@ struct BEGe {
         // apply some edge rounding, to make it look more realistic
         real eps = eps_edge_rounding;
 
-        path p = (0,0)
-                 -- (this.groove_inner_r-eps,0){right} .. {up}(this.groove_inner_r,eps)
-                 -- (this.groove_inner_r,this.groove_depth-eps){up} .. {right}(this.groove_inner_r+eps,this.groove_depth)
-                 -- (this.groove_outer_r-eps,this.groove_depth){right} .. {down}(this.groove_outer_r,this.groove_depth-eps)
-                 -- (this.groove_outer_r,eps){down} .. {right}(this.groove_outer_r+eps,0);
+        // define p+ profile
+        this.profile.pplus = (0,0) -- (this.groove_inner_r-eps,0){right};
 
+        // define groove profile
+        this.profile.groove = (this.groove_inner_r-eps,0){right}
+            .. {up}(this.groove_inner_r,eps)
+            -- (this.groove_inner_r,this.groove_depth-eps){up}
+            .. {right}(this.groove_inner_r+eps,this.groove_depth)
+            -- (this.groove_outer_r-eps,this.groove_depth){right}
+            .. {down}(this.groove_outer_r,this.groove_depth-eps)
+            -- (this.groove_outer_r,eps){down} .. {right}(this.groove_outer_r+eps,0);
+
+        // define nplus profile, check for tapering
         if (this.cone_height != 0 && this.cone_radius != 0) {
             real theta = atan(this.cone_height/this.cone_radius);
             if (this.cone_on_top == true) {
-                p = p -- (this.radius-eps,0){right} .. {up}(this.radius,eps)
-                      -- (this.radius,this.height-this.cone_height-eps){up}
-                      .. (this.radius-eps*cos(theta),this.height-this.cone_height+eps*sin(theta))
-                      -- (this.radius-this.cone_radius+eps*cos(theta),this.height-eps*sin(theta))
-                      .. {left}(this.radius-this.cone_radius-eps,this.height) -- (0,this.height);
+                this.profile.nplus = (this.groove_outer_r+eps,0)
+                    -- (this.radius-eps,0){right} .. {up}(this.radius,eps)
+                    -- (this.radius,this.height-this.cone_height-eps){up}
+                    .. (this.radius-eps*cos(theta),this.height-this.cone_height+eps*sin(theta))
+                    -- (this.radius-this.cone_radius+eps*cos(theta),this.height-eps*sin(theta))
+                    .. {left}(this.radius-this.cone_radius-eps,this.height) -- (0,this.height);
             }
             else {
-                p = p -- (this.radius-this.cone_radius-eps,0){right}
-                      .. (this.radius-this.cone_radius+eps*cos(theta),eps*sin(theta))
-                      -- (this.radius-eps*cos(theta),this.cone_height-eps*sin(theta))
-                      .. {up}(this.radius,this.cone_height+eps)
-                      -- (this.radius,this.height-eps){up} .. {left}(this.radius-eps,this.height)
-                      -- (0,this.height);
+                this.profile.nplus = (this.groove_outer_r+eps,0)
+                    -- (this.radius-this.cone_radius-eps,0){right}
+                    .. (this.radius-this.cone_radius+eps*cos(theta),eps*sin(theta))
+                    -- (this.radius-eps*cos(theta),this.cone_height-eps*sin(theta))
+                    .. {up}(this.radius,this.cone_height+eps)
+                    -- (this.radius,this.height-eps){up} .. {left}(this.radius-eps,this.height)
+                    -- (0,this.height);
             }
         }
         else {
-            p = p -- (this.radius-eps,0){right} .. {up}(this.radius,eps)
-                  -- (this.radius,this.height-eps){up} .. {left}(this.radius-eps,this.height)
-                  -- (0,this.height);
+            this.profile.nplus = (this.groove_outer_r+eps,0)
+                -- (this.radius-eps,0){right} .. {up}(this.radius,eps)
+                -- (this.radius,this.height-eps){up} .. {left}(this.radius-eps,this.height)
+                -- (0,this.height);
         }
         // center profile (detector) in origin
-        this.profile.all = shift(0,-this.height/2) * p;
+        this.profile.nplus = shift(0,-this.height/2) * this.profile.nplus;
+        this.profile.pplus = shift(0,-this.height/2) * this.profile.pplus;
+        this.profile.groove = shift(0,-this.height/2) * this.profile.groove;
+
+        // define total profile
+        this.profile.all = this.profile.pplus -- this.profile.groove -- this.profile.nplus;
 
         // passivation layer
         if (this.passlayer_thickness > 0) {
-            this.profile.passlayer = (this.groove_inner_r-eps,0){right} .. {up}(this.groove_inner_r,eps)
-                -- (this.groove_inner_r,this.groove_depth-eps){up} .. {right}(this.groove_inner_r+eps,this.groove_depth)
-                -- (this.groove_outer_r-eps,this.groove_depth){right} .. {down}(this.groove_outer_r,this.groove_depth-eps)
+            this.profile.passlayer = (this.groove_inner_r-eps,0){right}
+                .. {up}(this.groove_inner_r,eps)
+                -- (this.groove_inner_r,this.groove_depth-eps){up}
+                .. {right}(this.groove_inner_r+eps,this.groove_depth)
+                -- (this.groove_outer_r-eps,this.groove_depth){right}
+                .. {down}(this.groove_outer_r,this.groove_depth-eps)
                 -- (this.groove_outer_r,eps){down} .. {right}(this.groove_outer_r+eps,0); // and back...
             real delta = this.passlayer_thickness;
-            this.profile.passlayer = this.profile.passlayer{left} .. {up}(this.groove_outer_r-delta,eps)
-                -- (this.groove_outer_r-delta,this.groove_depth-eps){up} .. {left}(this.groove_outer_r-eps,this.groove_depth-delta)
-                -- (this.groove_inner_r+eps,this.groove_depth-delta){left} .. {down}(this.groove_inner_r+delta,this.groove_depth-eps)
+            this.profile.passlayer = this.profile.passlayer{left}
+                .. {up}(this.groove_outer_r-delta,eps)
+                -- (this.groove_outer_r-delta,this.groove_depth-eps){up}
+                .. {left}(this.groove_outer_r-eps,this.groove_depth-delta)
+                -- (this.groove_inner_r+eps,this.groove_depth-delta){left}
+                .. {down}(this.groove_inner_r+delta,this.groove_depth-eps)
                 -- (this.groove_inner_r+delta,eps){down} .. {left}(this.groove_inner_r-eps,0);
 
             // center profile (passivation layer) in origin
             this.profile.passlayer = shift(0,-this.height/2) * this.profile.passlayer;
         }
     }
+
+    // define how to write detector name (reimplement virtual function)
+    void draw_name(picture pic=currentpicture, pair pos=(0,0)) {
+        label(Label("\large\texttt{" + this.name + "}"), pos);
+    }
+    base.draw_name = draw_name;
 }
 
 /*
@@ -177,15 +254,17 @@ struct SemiCoax {
     BEGe bege; // use BEGe as base class
     unravel bege;
 
+    // .. but add borehole (part of p+)
     real borehole_depth;
     real borehole_radius;
 
-    void operator init(real keyword height, real keyword radius, real keyword groove_depth,
+    void operator init(string name="",
+                       real keyword height, real keyword radius, real keyword groove_depth,
                        real keyword groove_inner_r, real keyword groove_outer_r,
                        real keyword borehole_radius, real keyword borehole_depth,
                        real keyword cone_radius=0, real keyword cone_height=0,
                        bool keyword cone_on_top=true, bool keyword is_passivated=false) {
-        bege.operator init(height=height, radius=radius, groove_depth=groove_depth,
+        bege.operator init(name, height=height, radius=radius, groove_depth=groove_depth,
                            groove_inner_r=groove_inner_r, groove_outer_r=groove_outer_r,
                            cone_radius=cone_radius, cone_height=cone_height, cone_on_top=cone_on_top,
                            is_passivated=is_passivated);
@@ -195,41 +274,63 @@ struct SemiCoax {
         // apply some edge rounding, to make it look more realistic
         real eps = eps_edge_rounding;
 
-        path p = (0,this.borehole_depth)
+        // define p+ profile
+        this.profile.pplus = (0,this.borehole_depth)
                  -- (this.borehole_radius-eps,this.borehole_depth){right}
                  .. {down}(this.borehole_radius,this.borehole_depth-eps)
                  -- (this.borehole_radius,0+eps){down} .. {right}(this.borehole_radius+eps,0)
-                 -- (this.groove_inner_r-eps,0){right} .. {up}(this.groove_inner_r,eps)
-                 -- (this.groove_inner_r,this.groove_depth-eps){up} .. {right}(this.groove_inner_r+eps,this.groove_depth)
-                 -- (this.groove_outer_r-eps,this.groove_depth){right} .. {down}(this.groove_outer_r,this.groove_depth-eps)
+                 -- (this.groove_inner_r-eps,0);
+
+        // define groove profile
+        this.profile.groove = (this.groove_inner_r-eps,0){right} .. {up}(this.groove_inner_r,eps)
+                 -- (this.groove_inner_r,this.groove_depth-eps){up}
+                 .. {right}(this.groove_inner_r+eps,this.groove_depth)
+                 -- (this.groove_outer_r-eps,this.groove_depth){right}
+                 .. {down}(this.groove_outer_r,this.groove_depth-eps)
                  -- (this.groove_outer_r,eps){down} .. {right}(this.groove_outer_r+eps,0);
 
+        // define n+ profile, check if tapering
         if (this.cone_height != 0 && this.cone_radius != 0) {
             real theta = atan(this.cone_height/this.cone_radius);
             if (this.cone_on_top == true) {
-                p = p -- (this.radius-eps,0){right} .. {up}(this.radius,eps)
-                      -- (this.radius,this.height-this.cone_height-eps){up}
-                      .. (this.radius-eps*cos(theta),this.height-this.cone_height+eps*sin(theta))
-                      -- (this.radius-this.cone_radius+eps*cos(theta),this.height-eps*sin(theta))
-                      .. {left}(this.radius-this.cone_radius-eps,this.height) -- (0,this.height);
+                this.profile.nplus = (this.groove_outer_r+eps,0)
+                    -- (this.radius-eps,0){right} .. {up}(this.radius,eps)
+                    -- (this.radius,this.height-this.cone_height-eps){up}
+                    .. (this.radius-eps*cos(theta),this.height-this.cone_height+eps*sin(theta))
+                    -- (this.radius-this.cone_radius+eps*cos(theta),this.height-eps*sin(theta))
+                    .. {left}(this.radius-this.cone_radius-eps,this.height) -- (0,this.height);
             }
             else {
-                p = p -- (this.radius-this.cone_radius-eps,0){right}
-                      .. (this.radius-this.cone_radius+eps*cos(theta),eps*sin(theta))
-                      -- (this.radius-eps*cos(theta),this.cone_height-eps*sin(theta))
-                      .. {up}(this.radius,this.cone_height+eps)
-                      -- (this.radius,this.height-eps){up} .. {left}(this.radius-eps,this.height)
-                      -- (0,this.height);
+                this.profile.nplus = (this.groove_outer_r+eps,0)
+                    -- (this.radius-this.cone_radius-eps,0){right}
+                    .. (this.radius-this.cone_radius+eps*cos(theta),eps*sin(theta))
+                    -- (this.radius-eps*cos(theta),this.cone_height-eps*sin(theta))
+                    .. {up}(this.radius,this.cone_height+eps)
+                    -- (this.radius,this.height-eps){up} .. {left}(this.radius-eps,this.height)
+                    -- (0,this.height);
             }
         }
         else {
-            p = p -- (this.radius-eps,0){right} .. {up}(this.radius,eps)
-                  -- (this.radius,this.height-eps){up} .. {left}(this.radius-eps,this.height)
-                  -- (0,this.height);
+            this.profile.nplus = (this.groove_outer_r+eps,0)
+                -- (this.radius-eps,0){right} .. {up}(this.radius,eps)
+                -- (this.radius,this.height-eps){up} .. {left}(this.radius-eps,this.height)
+                -- (0,this.height);
         }
         // center profile (detector) in origin
-        this.profile.all = shift(0,-this.height/2) * p;
+        this.profile.nplus = shift(0,-this.height/2) * this.profile.nplus;
+        this.profile.pplus = shift(0,-this.height/2) * this.profile.pplus;
+        this.profile.groove = shift(0,-this.height/2) * this.profile.groove;
+
+        // define total profile
+        this.profile.all = this.profile.pplus -- this.profile.groove -- this.profile.nplus;
     }
+
+    // define how to write the name (reimplement wirtual function)
+    void draw_name(picture pic=currentpicture, pair pos=(0,0)) {
+        label(rotate(90)*Label("\large\texttt{" + this.name + "}"),
+              pos - (this.radius, this.height/2) + (3,3), align=NE);
+    }
+    base.draw_name = draw_name;
 }
 
 /*
@@ -243,12 +344,13 @@ struct InvCoax {
     real borehole_depth;
     real borehole_radius;
 
-    void operator init(real keyword height, real keyword radius, real keyword groove_depth,
+    void operator init(string name="",
+                       real keyword height, real keyword radius, real keyword groove_depth,
                        real keyword groove_inner_r, real keyword groove_outer_r,
                        real keyword borehole_radius, real keyword borehole_depth,
                        real keyword cone_radius=0, real keyword cone_height=0,
                        bool keyword cone_on_top=true, bool keyword is_passivated=false) {
-        bege.operator init(height=height, radius=radius, groove_depth=groove_depth,
+        bege.operator init(name, height=height, radius=radius, groove_depth=groove_depth,
                            groove_inner_r=groove_inner_r, groove_outer_r=groove_outer_r,
                            cone_radius=cone_radius, cone_height=cone_height, cone_on_top=cone_on_top,
                            is_passivated=is_passivated);
@@ -258,41 +360,63 @@ struct InvCoax {
         // apply some edge rounding, to make it look more realistic
         real eps = eps_edge_rounding;
 
-        path p = (0,0)
-                 -- (this.groove_inner_r-eps,0){right} .. {up}(this.groove_inner_r,eps)
-                 -- (this.groove_inner_r,this.groove_depth-eps){up} .. {right}(this.groove_inner_r+eps,this.groove_depth)
-                 -- (this.groove_outer_r-eps,this.groove_depth){right} .. {down}(this.groove_outer_r,this.groove_depth-eps)
-                 -- (this.groove_outer_r,eps){down} .. {right}(this.groove_outer_r+eps,0);
+        // define p+ profile
+        this.profile.pplus = (0,0) -- (this.groove_inner_r-eps,0);
 
+        // define groove
+        this.profile.groove = (this.groove_inner_r-eps,0){right}
+            .. {up}(this.groove_inner_r,eps)
+            -- (this.groove_inner_r,this.groove_depth-eps){up}
+            .. {right}(this.groove_inner_r+eps,this.groove_depth)
+            -- (this.groove_outer_r-eps,this.groove_depth){right}
+            .. {down}(this.groove_outer_r,this.groove_depth-eps)
+            -- (this.groove_outer_r,eps){down} .. {right}(this.groove_outer_r+eps,0);
+
+        // define n+ profile
         if (this.cone_height != 0 && this.cone_radius != 0) {
             real theta = atan(this.cone_height/this.cone_radius);
             if (this.cone_on_top == true) {
-                p = p -- (this.radius-eps,0){right} .. {up}(this.radius,eps)
-                      -- (this.radius,this.height-this.cone_height-eps){up}
-                      .. (this.radius-eps*cos(theta),this.height-this.cone_height+eps*sin(theta))
-                      -- (this.radius-this.cone_radius+eps*cos(theta),this.height-eps*sin(theta))
-                      .. {left}(this.radius-this.cone_radius-eps,this.height);
+                this.profile.nplus = (this.groove_outer_r+eps,0)
+                    -- (this.radius-eps,0){right} .. {up}(this.radius,eps)
+                    -- (this.radius,this.height-this.cone_height-eps){up}
+                    .. (this.radius-eps*cos(theta),this.height-this.cone_height+eps*sin(theta))
+                    -- (this.radius-this.cone_radius+eps*cos(theta),this.height-eps*sin(theta))
+                    .. {left}(this.radius-this.cone_radius-eps,this.height);
             }
             else {
-                p = p -- (this.radius-this.cone_radius-eps,0){right}
-                      .. (this.radius-this.cone_radius+eps*cos(theta),eps*sin(theta))
-                      -- (this.radius-eps*cos(theta),this.cone_height-eps*sin(theta))
-                      .. {up}(this.radius,this.cone_height+eps)
-                      -- (this.radius,this.height-eps){up} .. {left}(this.radius-eps,this.height);
+                this.profile.nplus = (this.groove_outer_r+eps,0)
+                    -- (this.radius-this.cone_radius-eps,0){right}
+                    .. (this.radius-this.cone_radius+eps*cos(theta),eps*sin(theta))
+                    -- (this.radius-eps*cos(theta),this.cone_height-eps*sin(theta))
+                    .. {up}(this.radius,this.cone_height+eps)
+                    -- (this.radius,this.height-eps){up} .. {left}(this.radius-eps,this.height);
             }
         }
         else {
-            p = p -- (this.radius-eps,0){right} .. {up}(this.radius,eps)
-                  -- (this.radius,this.height-eps){up} .. {left}(this.radius-eps,this.height);
+            this.profile.nplus = (this.groove_outer_r+eps,0)
+                -- (this.radius-eps,0){right} .. {up}(this.radius,eps)
+                -- (this.radius,this.height-eps){up} .. {left}(this.radius-eps,this.height);
         }
         // add borehole on top
-        p = p -- (this.borehole_radius+eps,this.height){left}
+        this.profile.nplus = this.profile.nplus -- (this.borehole_radius+eps,this.height){left}
               .. {down}(this.borehole_radius,this.height-eps)
               -- (this.borehole_radius,this.height-this.borehole_depth+eps){down}
               .. {left}(this.borehole_radius-eps,this.height-this.borehole_depth)
               -- (0,this.height-this.borehole_depth);
 
         // center profile (detector) in origin
-        this.profile.all = shift(0,-this.height/2) * p;
+        this.profile.nplus = shift(0,-this.height/2) * this.profile.nplus;
+        this.profile.pplus = shift(0,-this.height/2) * this.profile.pplus;
+        this.profile.groove = shift(0,-this.height/2) * this.profile.groove;
+
+        // define total profile
+        this.profile.all = this.profile.pplus -- this.profile.groove -- this.profile.nplus;
     }
+
+    // define how to write the name (reimplement wirtual function)
+    void draw_name(picture pic=currentpicture, pair pos=(0,0)) {
+        label(rotate(90)*Label("\large\texttt{" + this.name + "}"),
+              pos - (this.radius, this.height/2) + (3,3), align=NE);
+    }
+    base.draw_name = draw_name;
 }

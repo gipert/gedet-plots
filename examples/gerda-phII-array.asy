@@ -21,6 +21,9 @@
 // IN THE SOFTWARE.
 
 from detector_db access *;
+import three;
+
+currentprojection = orthographic((0,10,-2));
 
 // string 1
 GD91A.draw(pos=(110,0,75.09));
