@@ -20,10 +20,6 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 // IN THE SOFTWARE.
 
-//settings.outformat = "png";
-//settings.prc = false;
-//settings.render = -1;
-
 import three;
 from detector_db access *;
 

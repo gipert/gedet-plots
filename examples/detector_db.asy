@@ -71,4 +71,8 @@ SemiCoax GTF45  = SemiCoax("GTF45",  height=75,  radius=43.5, groove_depth=2, gr
 SemiCoax GTF32  = SemiCoax("GTF32",  height=71,  radius=44.5, groove_depth=2, groove_inner_r=15, groove_outer_r=20, borehole_depth=41.5, borehole_radius=6.00, is_passivated=true);
 SemiCoax GTF112 = SemiCoax("GTF112", height=100, radius=42.5, groove_depth=2, groove_inner_r=17, groove_outer_r=20, borehole_depth=63.0, borehole_radius=5.75);
 
-InvCoax IC48A = InvCoax("IC48A", height=80.4, radius=37.3, groove_depth=2, groove_inner_r=10, groove_outer_r=13, borehole_depth=47.4, borehole_radius=5.25);
+InvCoax IC50A = InvCoax("IC50A", height=80.4, radius=37.35, groove_depth=2, groove_inner_r=9.5, groove_outer_r=13.5, borehole_depth=40.0, borehole_radius=5.25);
+InvCoax IC50B = InvCoax("IC50B", height=85.4, radius=36.30, groove_depth=2, groove_inner_r=9.5, groove_outer_r=13.5, borehole_depth=53.9, borehole_radius=5.25);
+InvCoax IC48A = InvCoax("IC48A", height=80.4, radius=37.30, groove_depth=2, groove_inner_r=10., groove_outer_r=13.0, borehole_depth=47.4, borehole_radius=5.25);
+InvCoax IC48B = InvCoax("IC48B", height=80.5, radius=36.30, groove_depth=2, groove_inner_r=7.5, groove_outer_r=12.5, borehole_depth=56.0, borehole_radius=5.25);
+InvCoax IC74A = InvCoax("IC74A", height=82.3, radius=38.30, groove_depth=2, groove_inner_r=9.5, groove_outer_r=13.5, borehole_depth=52.4, borehole_radius=5.25);
