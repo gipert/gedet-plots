@@ -152,8 +152,8 @@ struct gedet {
         draw(trans * this.profile.pplus,                         linewidth(2)+ge_pplus.p[0]);
 
         // draw nplus
-        draw(trans * reflect((0,0), (0,1)) * this.profile.nplus, linewidth(2)+ge_nplus.p[0]);
-        draw(trans * this.profile.nplus,                         linewidth(2)+ge_nplus.p[0]);
+        draw(trans * reflect((0,0), (0,1)) * this.profile.nplus, linewidth(2)+ge_nplus.p[1]);
+        draw(trans * this.profile.nplus,                         linewidth(2)+ge_nplus.p[1]);
 
         // add detector name
         this.draw_name(pos);
