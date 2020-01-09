@@ -33,22 +33,25 @@ void showaxes(picture pic=currentpicture, triple pos=O) {
 
 // define material coloring
 material germanium = material(
-    diffusepen=gray(0.8),
-    emissivepen=black
+    diffusepen=gray(0.7),
+    emissivepen=gray(0.2),
+    shininess=0.5
 );
 
 material ge_pplus = material(
     diffusepen=RGB(238,119,51),
-    emissivepen=black
+    emissivepen=RGB(119, 59, 25),
+    shininess=0.5
 );
 
 material ge_nplus = material(
-    diffusepen=RGB(0,153,136),
-    emissivepen=black
+    emissivepen=RGB(0,153,136),
+    shininess=0.5
 );
 
 material ge_oxide = material(
-    diffusepen=RGB(24,91,176)+opacity(0.6)
+    diffusepen=RGB(24,91,176)+opacity(0.6),
+    shininess=0.5
 );
 
 real eps_edge_rounding = 0.5;
