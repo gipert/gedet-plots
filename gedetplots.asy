@@ -48,9 +48,7 @@ material ge_nplus = material(
 );
 
 material ge_oxide = material(
-    diffusepen=gray(0.8),
-    emissivepen=RGB(0,119,187),
-    opacity(0.5)
+    diffusepen=RGB(24,91,176)+opacity(0.6)
 );
 
 real eps_edge_rounding = 0.5;
@@ -61,6 +59,8 @@ struct gedet_profile {
     path nplus;
     path groove;
     path passlayer;
+
+    path _namesurf;
 }
 
 /*
@@ -79,14 +79,27 @@ struct gedet {
      * Draw full 3D detector
      */
     void draw(picture pic=currentpicture, triple pos=O,
-              bool flip=false, real angle1=0, real angle2=360) {
+              bool flip=false, real angle1=0, real angle2=360,
+              bool hi_pplus=false, bool name=false) {
 
         // sanity checks
         if (angle1 >= angle2 || angle2-angle1 > 360) abort("gedet.draw(): invalid input");
 
-        path3 profile3 = path3(this.profile.all, plane=YZplane);
+        // shift (and flip?) transformation
         real[][] trans = shift(pos) * rotate(flip ? 180 : 0, X);
-        draw(trans * surface(profile3 -- cycle, c=O, axis=Z, angle1=angle1, angle2=angle2), surfacepen=germanium);
+
+        path3 profile3 = path3(this.profile.all, plane=YZplane);
+
+        draw(trans * surface(path3(this.profile.pplus, plane=YZplane),
+                             c=O, axis=Z, angle1=angle1, angle2=angle2),
+             surfacepen=(hi_pplus ? ge_pplus : germanium));
+
+        draw(trans * surface(path3(this.profile.nplus, plane=YZplane),
+                             c=O, axis=Z, angle1=angle1, angle2=angle2),
+             surfacepen=germanium);
+        draw(trans * surface(path3(this.profile.groove, plane=YZplane),
+                             c=O, axis=Z, angle1=angle1, angle2=angle2),
+             surfacepen=germanium);
 
         if (this.profile.passlayer != nullpath) {
             path3 passlayer3 = path3(this.profile.passlayer, plane=YZplane);
@@ -100,6 +113,15 @@ struct gedet {
         if (angle2-angle1 != 360) {
             draw(trans * rotate(angle1, Z) * surface(profile3 -- cycle), surfacepen=germanium);
             draw(trans * rotate(angle2, Z) * surface(profile3 -- cycle), surfacepen=germanium);
+            // draw(trans * rotate(angle2, Z) * surface(yscale(1)*xscale(1)*("\texttt{"+this.name+"}"),
+            //                                          surface(profile3 -- cycle),
+            //                                          0, 0));
+        }
+
+        if (name) {
+            draw(trans * surface(yscale(0.2)*xscale(0.1)*("\texttt{"+this.name+"}"),
+                                 surface(path3(this.profile._namesurf, plane=YZplane), c=O, axis=Z),
+                                 5, 0));
         }
     }
 
@@ -237,6 +259,7 @@ struct BEGe {
             // center profile (passivation layer) in origin
             this.profile.passlayer = shift(0,-this.height/2) * this.profile.passlayer;
         }
+        this.profile._namesurf = (this.radius,-10) -- (this.radius,10);
     }
 
     // define how to write detector name (reimplement virtual function)
