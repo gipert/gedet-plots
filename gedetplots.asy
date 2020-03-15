@@ -83,7 +83,7 @@ struct gedet {
      */
     void draw(picture pic=currentpicture, triple pos=O,
               bool flip=false, real angle1=0, real angle2=360,
-              bool hi_pplus=false, bool name=false) {
+              bool hi_pplus=false, bool empty=false, bool name=false) {
 
         // sanity checks
         if (angle1 >= angle2 || angle2-angle1 > 360) abort("gedet.draw(): invalid input");
@@ -113,7 +113,7 @@ struct gedet {
             }
         }
         // draw faces in cut view
-        if (angle2-angle1 != 360) {
+        if (angle2-angle1 != 360 && !empty) {
             draw(trans * rotate(angle1, Z) * surface(profile3 -- cycle), surfacepen=germanium);
             draw(trans * rotate(angle2, Z) * surface(profile3 -- cycle), surfacepen=germanium);
             // draw(trans * rotate(angle2, Z) * surface(yscale(1)*xscale(1)*("\texttt{"+this.name+"}"),
