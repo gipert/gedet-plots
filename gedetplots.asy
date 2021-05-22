@@ -34,7 +34,7 @@ void showaxes(picture pic=currentpicture, triple pos=O) {
 // define material coloring
 material germanium = material(
     diffusepen=gray(0.7),
-    emissivepen=gray(0.2),
+    emissivepen=gray(0.25),
     shininess=0.5
 );
 
