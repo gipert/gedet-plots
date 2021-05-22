@@ -30,15 +30,17 @@ settings.tex = "xelatex";
 usepackage("ebgaramond", options="lining");
 usepackage("unicode-math", options="math-style=ISO, bold-style=ISO");
 texpreamble("\setmathfont{Garamond-Math.otf}");
+defaultpen(fontsize(8pt));
 
-from tolcolors access *;
-from detector_db access *;
+from "lib/paultolcolors" access *;
+from "lib/detector_db" access *;
 import three;
 currentprojection = orthographic((5,0,1));
 
 // predefined stuff
 triple vert_sp = -40Z;
 triple hor_sp  = 85Y;
+triple label_zpos = -75Z;
 
 surface edep = scale3(1.2)*unitsphere;
 surface edeplar = scale3(1.3)*unitsphere;
@@ -58,6 +60,8 @@ pen optphoton = tolvibblue;
  * signal
  */
 
+label("\textsc{signal-like}", label_zpos);
+
 GD91A.draw(angle1=0, angle2=240, pos=O, empty=true, hi_pplus=true);
 GD02D.draw(pos=vert_sp, hi_pplus=true);
 
@@ -70,6 +74,8 @@ label("\tiny$\upbeta\upbeta$", bb, N);
 /*
  * granularity
  */
+
+label("\textsc{granularity cut}", label_zpos+hor_sp);
 
 triple top_det = O+hor_sp;
 triple bot_det = O+hor_sp+vert_sp;
@@ -96,13 +102,15 @@ draw(edep_bot{-Y+Z} .. {Z}(bot_det+GD02C.height*Z/2-0.5*GD02C.radius*Y), electro
  * PSD
  */
 
+label(minipage("\centering\textsc{pulse-shape discrimination}", 80), label_zpos+2*hor_sp);
+
 SemiCoax dummy = SemiCoax("GTF32",
-    height=70, radius=37,
+    height=68, radius=37,
     groove_depth=2, groove_inner_r=15, groove_outer_r=20,
     borehole_depth=41.5, borehole_radius=6.00,
     is_passivated=true);
 
-triple det_center = O+2*hor_sp+vert_sp/2 -3Z;
+triple det_center = O+2*hor_sp+vert_sp/2 -2Z;
 
 dummy.draw(angle1=0, angle2=240, pos=det_center, hi_pplus=true, empty=true);
 
@@ -132,7 +140,6 @@ draw(shift(edep_4)*edep, edepstyle);
 draw(edep_4{-Y} .. {-Y}(det_center-det_center.z*Z-dummy.radius*Y+edep_4.z*Z), electron);
 draw(edep_4{Y} .. {Y}(det_center-det_center.z*Z-dummy.borehole_radius*Y+edep_4.z*Z), hole);
 
-
 // surface alpha
 triple alpha_pos = det_center+dummy.borehole_radius*Y-dummy.height*Z/4;
 label("\tiny$\upalpha$", alpha_pos, W);
@@ -148,6 +155,8 @@ draw(beta_pos{-Y} .. {-Z}(det_center+12*Y-dummy.height*Z/2), hole);
 /*
  * LAr veto
  */
+
+label("\textsc{LAr veto}", label_zpos+3*hor_sp);
 
 // photon lines
 // warning: assumes that the X axis is normal to the drawing
