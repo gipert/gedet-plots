@@ -1,6 +1,6 @@
 # gedet-plots
 
-Beatiful HPGe detector drawings with [Asymptote](https://asymptote.sourceforge.io/).
+High-quality HPGe detector drawings with [Asymptote](https://asymptote.sourceforge.io/).
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/gipert/gedet-plots/master/.github/gerda-events.png" alt="GERDA events">
